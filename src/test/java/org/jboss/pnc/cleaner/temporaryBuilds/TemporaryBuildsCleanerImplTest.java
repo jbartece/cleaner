@@ -20,10 +20,16 @@ package org.jboss.pnc.cleaner.temporaryBuilds;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.quarkus.test.junit.QuarkusTest;
+import org.jboss.pnc.cleaner.auth.DefaultKeycloakServiceClient;
 import org.jboss.pnc.cleaner.common.TestConstants;
+import org.jboss.pnc.cleaner.orchApi.OrchClientConfiguration;
+import org.jboss.pnc.client.Configuration;
+import org.jboss.pnc.client.RemoteResourceException;
+import org.jboss.pnc.client.UserClient;
 import org.jboss.pnc.common.util.HttpUtils;
 import org.jboss.pnc.common.util.TimeUtils;
 import org.jboss.pnc.dto.DeleteOperationResult;
+import org.jboss.pnc.dto.User;
 import org.jboss.pnc.enums.ResultStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -204,5 +210,31 @@ public class TemporaryBuildsCleanerImplTest {
         temporaryBuildsCleaner.deleteExpiredBuildConfigSetRecords(TimeUtils.getDateXDaysAgo(14));
 
         // then - nothing should happen
+    }
+
+
+    @Inject
+    OrchClientConfiguration orchClientConfiguration;
+
+    @Inject
+    DefaultKeycloakServiceClient defaultKeycloakServiceClient;
+
+    @Test
+    public void insertUser() throws RemoteResourceException {
+        Configuration oldConfig =  orchClientConfiguration.getConfiguration();
+
+
+        System.out.println("TOKEN: " + defaultKeycloakServiceClient.getAuthToken());
+        UserClient userClient = new UserClient(Configuration.builder()
+                .host(oldConfig.getHost())
+                .port(oldConfig.getPort())
+                .pageSize(oldConfig.getPageSize())
+                .protocol(oldConfig.getProtocol())
+                .bearerToken(defaultKeycloakServiceClient.getAuthToken())
+                .build());
+
+        User user = userClient.getCurrentUser();
+
+        System.out.println("\n\n\n\nUSER: " + user.toString() + "\n\n\n");
     }
 }
